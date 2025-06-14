@@ -1,27 +1,29 @@
 ---
-- name: Firmware Upgrade Playbook for Linux Machine
+- name: Firmware Upgrade by pulling from remote server
   hosts: all
   become: yes
   vars:
     ansible_user: fpos
     ansible_ssh_pass: "s"
     ansible_become_pass: "s"
+    server_user: fpos
+    server_ip: "10.2.5.122"
+    server_pass: "s"
     upgrade_file_pattern: "*r35_rw1*"
-    scp_source_ip: "10.2.5.122"
     scp_source_path: "/var/log/updates"
     download_path: "/home/fpos"
     final_path: "/var/log/updates"
 
   tasks:
 
-    - name: Ensure sshpass is installed (required for scp with password)
+    - name: Ensure sshpass is available
       package:
         name: sshpass
         state: present
 
-    - name: Download firmware file using SCP
+    - name: Pull firmware from remote server using scp
       shell: |
-        sshpass -p 's' scp root@{{ scp_source_ip }}:{{ scp_source_path }}/{{ upgrade_file_pattern }} {{ download_path }}/
+        sshpass -p '{{ server_pass }}' scp {{ server_user }}@{{ server_ip }}:{{ scp_source_path }}/{{ upgrade_file_pattern }} {{ download_path }}/
       args:
         executable: /bin/bash
 
@@ -30,9 +32,11 @@
         minutes: 3
 
     - name: Move downloaded firmware to final path
-      command: mv {{ download_path }}/{{ upgrade_file_pattern }} {{ final_path }}/
+      shell: mv {{ download_path }}/{{ upgrade_file_pattern }} {{ final_path }}/
+      args:
+        executable: /bin/bash
 
-    - name: Remove existing Fatpipe directory if any
+    - name: Remove old Fatpipe directory
       file:
         path: "{{ final_path }}/Fatpipe"
         state: absent
@@ -41,15 +45,18 @@
       shell: tar -zxvf {{ upgrade_file_pattern }}
       args:
         chdir: "{{ final_path }}"
+        executable: /bin/bash
 
-    - name: Execute firmware update script
+    - name: Run firmware upgrade script
       shell: ./update.sh --no-udev-check
       args:
         chdir: "{{ final_path }}/Fatpipe"
+        executable: /bin/bash
 
-    - name: Wait for update script to complete
+    - name: Wait for script to complete
       pause:
         minutes: 5
 
     - name: Reboot the system
       reboot:
+        reboot_timeout: 600
