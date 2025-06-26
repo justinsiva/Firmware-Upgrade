@@ -7,9 +7,9 @@
     ansible_ssh_pass: "s"
     ansible_become_pass: "s"
     server_user: fpos
-    server_ip: "10.2.5.122"
+    server_ip: "40.40.40.2"
     server_pass: "s"
-    upgrade_file_pattern: "*r35_rw1*"
+    upgrade_file_pattern: "*r34p4*"
     scp_source_path: "/var/log/updates"
     download_path: "/home/fpos"
     final_path: "/var/log/updates"
@@ -21,15 +21,15 @@
         name: sshpass
         state: present
 
-    - name: Pull firmware from remote server using scp
-      shell: |
-        sshpass -p '{{ server_pass }}' scp {{ server_user }}@{{ server_ip }}:{{ scp_source_path }}/{{ upgrade_file_pattern }} {{ download_path }}/
-      args:
-        executable: /bin/bash
+    # - name: Pull firmware from remote server using scp
+    #   shell: |
+    #     sshpass -p '{{ server_pass }}' scp {{ server_user }}@{{ server_ip }}:{{ scp_source_path }}/{{ upgrade_file_pattern }} {{ download_path }}/
+    #   args:
+    #     executable: /bin/bash
 
-    - name: Wait for download to complete
-      pause:
-        minutes: 3
+    # - name: Wait for download to complete
+    #   pause:
+    #     minutes: 3
 
     - name: Move downloaded firmware to final path
       shell: mv {{ download_path }}/{{ upgrade_file_pattern }} {{ final_path }}/
